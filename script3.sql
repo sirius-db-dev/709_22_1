@@ -24,7 +24,7 @@ values
 insert into reviews (id_course, text_review, mark)
 values
     (1, 'Хороший курс',6),
-    (2, 'Мне понравилось', 8),
+    (1, 'Мне понравилось', 8),
     (3, 'Идеально', 10);
 
 select

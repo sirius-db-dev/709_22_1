@@ -26,7 +26,7 @@ values
 insert into performances (id_conference, name, date_performance, topic)
 values
     (1, 'Выступление 1', '2024.02.28', 'ул Морских Фонарей'),
-    (2, 'Выступление 2', '2024.03.18', 'ул Вечных Дождей'),
+    (1, 'Выступление 2', '2024.03.18', 'ул Вечных Дождей'),
     (3, 'Выступление 3', '2024.04.13', 'ул Нарциссов');
 
 select
@@ -40,3 +40,6 @@ select
 from conferences as con
          left join performances per on con.id = per.id_conference
 group by con.id;
+
+
+

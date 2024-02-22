@@ -25,7 +25,7 @@ values
 insert into vehicles (id_provider, brand, model, lif_capacity)
 values
     (1, 'OOO', '555', '3 kg'),
-    (2, 'AAA', '777', '5 kg'),
+    (1, 'AAA', '777', '5 kg'),
     (3, 'TTT', '999', '4 kg');
 
 select
@@ -38,3 +38,6 @@ select
 from providers as pro
          left join vehicles ve on pro.id = ve.id_provider
 group by pro.id;
+
+
+
