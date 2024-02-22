@@ -1,9 +1,9 @@
-DROP TABLE repositories CASCADE;
-DROP TABLE tickets;
-DROP TABLE courses CASCADE;
-DROP TABLE reviews;
-DROP TABLE suppliers CASCADE;
-DROP TABLE vehicles;
+DROP TABLE IF EXISTS repositories CASCADE;
+DROP TABLE IF EXISTS tickets;
+DROP TABLE IF EXISTS courses CASCADE;
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS suppliers CASCADE;
+DROP TABLE IF EXISTS vehicles;
 
 CREATE TABLE IF NOT EXISTS repositories (
   id serial PRIMARY KEY,
@@ -104,4 +104,25 @@ SELECT
 FROM suppliers s
 LEFT JOIN vehicles v ON s.id = v.supplier_id
 GROUP by s.id;
+
+DELETE FROM vehicles;
+SELECT 
+	s.id, 
+    s.name, 
+    s.phone,
+    coalesce (
+      jsonb_agg(
+        jsonb_build_object(
+          'id', v.id, 
+          'mark', v.mark, 
+		  'model', v.model,
+          'weight_limit', v.weight_limit
+        )
+      ) 
+      filter(where v.id is not null), '[]'
+    ) AS vehicles
+FROM suppliers s
+LEFT JOIN vehicles v ON s.id = v.supplier_id
+GROUP by s.id;
+
 
