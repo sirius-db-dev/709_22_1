@@ -23,9 +23,9 @@ insert into video(title, opisanie, date_public)
 values ('экстрасенсы реванш', 'топи топа', '2024-02-13'),
 		('выжить в саморканде', 'тоже топи топа', '2023-06-08');
 		
-insert into comment(text_comment, likes)
-values ('шепс конечно раздражает чуть-чуть', 150),
-		('у ляйсан красивые наряды', 50);
+insert into comment(video_id, text_comment, likes)
+values (1, 'шепс конечно раздражает чуть-чуть', 150),
+		(2, 'у ляйсан красивые наряды', 50);
 
 select
 	v.id,
@@ -37,5 +37,5 @@ select
 	filter (where c.id is not null), '[]')
 from video v
 left join comment c
-	on v.id = c.id
+	on v.id = c.video_id
 group by v.id;

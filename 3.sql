@@ -20,9 +20,9 @@ insert into appeal(number, date_reliase, status)
 values (15, '2024-02-21', 'получен ответ'),
 		(16, '2024-02-22', 'отправлено');
 	
-insert into comments(text_comments, date_public)
-values ('мы обратим внимание на проблемы с сайтом', '2024-02-21'),
-		('мы еще не прочитали ваше обращение', '2024-02-22');
+insert into comments(appeal_id, text_comments, date_public)
+values (1, 'мы обратим внимание на проблемы с сайтом', '2024-02-21'),
+		(2, 'мы еще не прочитали ваше обращение', '2024-02-22');
 
 select
 	a.id,
@@ -34,5 +34,5 @@ select
 	filter (where com.id is not null), '[]')
 from appeal a
 left join comments com
-	on a.id = com.id
+	on a.id = com.appeal_id
 group by a.id;
