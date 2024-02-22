@@ -1,3 +1,5 @@
+--zorina
+
 drop table if exists video, comment;
 create table video
 (
