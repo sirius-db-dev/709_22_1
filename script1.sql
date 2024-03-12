@@ -1,45 +1,79 @@
 create extension if not exists "uuid-ossp";
+drop table if exists delivery, courier, delivery_to_courier cascade;
 
-
-drop table if exists articles, comments;
-
-create table articles
+create table delivery
 (
-    id uuid primary key DEFAULT uuid_generate_v4(),
-    title text,
-    text text,
-    pub_date date
+  id uuid primary key default uuid_generate_v4(),
+  title text,
+  phone_number text
+);
+create table courier
+(
+  id uuid primary key default uuid_generate_v4(),
+  last_name text,
+  first_name text,
+  vehicle text,
+  phone_number text,
+  bag_volume numeric
 );
 
-create table comments
+
+create table delivery_to_courier
 (
-    id uuid primary key DEFAULT uuid_generate_v4(),
-    article_id uuid REFERENCES articles(id),
-    text text,
-    amount_likes BIGINT
+  delivery_id uuid references delivery(id),
+  courier_id uuid references courier(id)
 );
 
-insert into articles (title, text, pub_date)
-values
-    ('title1', 'text1', '2022/09/01'),
-    ('title2', 'text2', '2023/03/23'),
-    ('title3', 'text3', '2013/01/11'),
-    ('title4', 'text4', '2014/09/09');
 
-insert into comments (article_id, text, amount_likes)
+insert into delivery (title, phone_number)
 values
-    ((select id from articles where title='title1'), 'comment1WOW', 100),
-    ((select id from articles where title='title2'), 'comment2OMG', 2024),
-    ((select id from articles where title='title3'), 'comment3LMAO', 2),
-    ((select id from articles where title='title3'), 'comment3?!@#', 1);
+('Delivery 1', '1234567890'),
+('Delivery 2', '1234567891'),
+('Delivery 3', '1234567892'),
+('Delivery 4', '1234567893');
 
-select 
-    a.id,
-    a.title,
-    a.text,
-    a.pub_date,
-    coalesce(json_agg(json_build_object('id', c.id, 'text', c.text, 'amount_likes', c.amount_likes))
-    filter(where c.id is not null), '[]') as comments
-from articles a
-left join comments c on a.id=c.article_id
-group by a.id;
+
+insert into courier (first_name, last_name, phone_number, vehicle, bag_volume)
+values
+('John', 'Doe', '1234567890', 'car', 0.5),
+('Mary', 'Jane', '1234567891', 'bus', 0.5),
+('Bob', 'Bully', '1234567892', 'skate', 1);
+
+
+insert into delivery_to_courier (delivery_id, courier_id)
+values
+    ((select id from delivery where title = 'Delivery 1'),
+      (select id from courier where first_name = 'John')),
+    ((select id from delivery where title = 'Delivery 2'),
+      (select id from courier where first_name = 'Mary')),
+    ((select id from delivery where title = 'Delivery 3'),
+      (select id from courier where first_name = 'Mary'));
+
+
+select
+  d.id,
+  d.title,
+  d.phone_number,
+  coalesce(jsonb_agg(jsonb_build_object(
+  'id', c.id, 'first_name', c.first_name, 'last_name', c.last_name,
+  'vehicle', c.vehicle))
+  filter (where c.id is not null), '[]') as courier
+from delivery d
+left join delivery_to_courier dc on d.id = dc.delivery_id
+left join courier c on c.id = dc.courier_id
+group by d.id;
+
+select
+  c.id,
+  c.last_name,
+  c.first_name,
+  c.phone_number,
+  c.bag_volume,
+  c.vehicle,
+  coalesce(jsonb_agg(jsonb_build_object(
+  'id', d.id, 'title', d.title, 'phone_number', d.phone_number))
+  filter (where d.id is not null), '[]') as delivery
+from courier c
+left join delivery_to_courier dc on c.id = dc.courier_id
+left join delivery d on d.id = dc.delivery_id
+group by c.id;
