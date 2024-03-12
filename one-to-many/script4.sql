@@ -25,7 +25,8 @@ insert into provider (name, telephone)
 values
     ('First_prov', '89894475904'),
     ('Second_prov', '89892438493'),
-    ('Third_prov', '89485038595');
+    ('Third_prov', '89485038595'),
+    ('Fouth_prov', '89284848596');
 
 insert into transports (provider_id, brand, model, permissible_weight)
 VALUES

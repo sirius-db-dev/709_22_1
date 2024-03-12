@@ -26,7 +26,8 @@ insert into repository (name, description, stars)
 values
     ('First_repos', 'cool', '5'),
     ('Second_repos', 'well done', '4'),
-    ('Third_repos', 'horror', '2');
+    ('Third_repos', 'horror', '2'),
+    ('Fouth_repos', 'i dont know', '6');
 
 insert into tikets (repository_id, name, description, status)
 VALUES

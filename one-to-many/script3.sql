@@ -26,7 +26,8 @@ insert into festival (name, day, place)
 values
     ('Rock-Festival', '2024.05.25', 'Krasnodar'),
     ('Cat-Festival', '2023.11.20', 'Sochi'),
-    ('Dog-Festival', '2022.10.05', 'Moscow');
+    ('Dog-Festival', '2022.10.05', 'Moscow'),
+    ('New-Festival', '2022.12.23', 'Berlin');
 
 insert into shows (festival_id, name, day, genre)
 VALUES
