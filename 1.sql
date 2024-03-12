@@ -1,38 +1,65 @@
---Krivenko Artem
+--Кривенко Артём
+create extension if not exists "uuid-ossp";
 
-drop table if exists fectival, vistuplenie cascade;
+drop table if exists music, musicians, music_to_musicians cascade;
 
-create table fectival (
-	id int primary key,
-	name_fectival text,
-	data_fectival date,
-	mesto text
+create table music(
+    id   uuid primary key default uuid_generate_v4(),
+    title text,
+    genre text,
+    duration int
 );
 
-create table vistuplenie (
-	id int primary key,
-	neme_vistuplenie text,
-	data_vistuplenie date,
-	genre text,
-	fectival_id int references fectival(id)
+create table musicians(
+    id   uuid primary key default uuid_generate_v4(),
+    first_name text,
+    last_name text,
+    year_of_birth date
 );
 
-insert into fectival(id, name_fectival, data_fectival, mesto)
-values (1, 'VFM', '2024-03-19', 'Sirius'),
-	   (2, 'Asia-E', '2023-04-03', 'Sochi'),
-	   (3, 'Klass', '2022-05-12', 'Adler');
-	   
-insert into vistuplenie(id, neme_vistuplenie, data_vistuplenie, genre, fectival_id)
-values (1, 'Rus', '2024-03-19', 'r', 1),
-	   (2, 'Eng', '2023-04-03', 'e', 1),
-	   (3, 'USA', '2022-05-12', 'u', 2),
-	   (4, 'Ind', '2024-03-19', 'i', 2),
-	   (5, 'Ase', '2023-04-03', 'a', 3),
-	   (6, 'Eur', '2022-05-12', 'e', 3);
-	   
-select fectival.name_fectival, fectival.data_fectival, fectival.mesto,
-coalesce(json_agg(json_build_object('name_v', vistuplenie.neme_vistuplenie, 'data_v', vistuplenie.data_vistuplenie, 'genre', vistuplenie.genre))
-filter(where vistuplenie.fectival_id notnull), '[]')
-from fectival
-left join vistuplenie on vistuplenie.fectival_id = fectival.id
-group by fectival.id;
+create table music_to_musicians(
+    music_id uuid references music,
+    musicians_id  uuid references musicians,
+    primary key (music_id, musicians_id)
+);
+
+insert into music(title, genre, duration)
+values ('qqq', 'www', 123),
+       ('aaa', 'sss', 456),
+       ('zzz', 'xxx', 124);
+
+insert into musicians(first_name, last_name, year_of_birth)
+values ('Artem', 'Krivenko', '2007-03-07'),
+       ('Anton', 'Otroshenko', '2006-02-08'),
+       ('Vlad', 'Osipov', '2006-11-20');
+
+insert into music_to_musicians(music_id, musicians_id)
+values
+    ((select id from music where title = 'qqq'),
+     (select id from musicians where last_name = 'Krivenko')),
+    ((select id from music where title = 'qqq'),
+     (select id from musicians where last_name = 'Otroshenko')),
+    ((select id from music where title = 'aaa'),
+     (select id from musicians where last_name = 'Krivenko')),
+    ((select id from music where title = 'aaa'),
+     (select id from musicians where last_name = 'Otroshenko')),
+    ((select id from music where title = 'zzz'),
+     (select id from musicians where last_name = 'Osipov')),
+    ((select id from music where title = 'zzz'),
+     (select id from musicians where last_name = 'Otroshenko'));
+
+select music.id, music.title, music.genre, music.duration,
+coalesce(jsonb_agg(jsonb_build_object('id', musicians.id, 'first_name', musicians.first_name, 'last_name', musicians.last_name, 'year_of_birth', musicians.year_of_birth))
+filter (where musicians.id is not null), '[]')
+from music
+left join music_to_musicians on music.id = music_to_musicians.music_id
+left join musicians on musicians.id = music_to_musicians.musicians_id
+group by music.id;
+
+select musicians.id, musicians.first_name, musicians.last_name, musicians.year_of_birth,
+coalesce(jsonb_agg(jsonb_build_object('id', music.id, 'title', music.title, 'genre', music.genre, 'duration', music.duration))
+filter (where music.id is not null), '[]')
+from musicians
+left join music_to_musicians on musicians.id = music_to_musicians.musicians_id
+left join music on music.id = music_to_musicians.music_id
+group by musicians.id;

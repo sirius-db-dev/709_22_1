@@ -1,37 +1,63 @@
---Krivenko Artem
+--Кривенко Артём
+create extension if not exists "uuid-ossp";
 
-drop table if exists teams, employees cascade;
+drop table if exists suppliers, stores, suppliers_to_stores cascade;
 
-create table teams (
-	id int primary key,
-	name_teams text,
-	date_of_creation date
+create table suppliers(
+    id   uuid primary key default uuid_generate_v4(),
+    name_suppliers text,
+    phone text
 );
 
-create table employees (
-	id int primary key,
-	first_name text,
-	last_name text,
-	job_title text,
-	teams_id int references teams(id)
+create table stores(
+    id   uuid primary key default uuid_generate_v4(),
+    name_stores text,
+    address text
 );
 
-insert into teams(id, name_teams, date_of_creation)
-values (1, '№1', '2024-04-19'),
-	   (2, '№2', '2023-03-18'),
-	   (3, '№3', '2022-02-17');
-	   
-insert into employees(id, first_name, last_name, job_title, teams_id)
-values (1, 'Artem', 'Krivenko', 'a', 1),
-	   (2, 'Anton', 'Otroshenko', 'b', 1),
-	   (3, 'Artem', 'Nehoroshev', 'c', 2),
-	   (4, 'Vlad', 'Osipov', 'd', 2),
-	   (5, 'Misha', 'Noskov', 'e', 3),
-	   (6, 'Danil', 'Ozornin', 'f', 3);
-	   
-select teams.name_teams, teams.date_of_creation,
-coalesce(json_agg(json_build_object('first_name', employees.first_name, 'last_name', employees.last_name, 'job_title', employees.job_title))
-filter(where employees.teams_id notnull), '[]')
-from teams
-left join employees on employees.teams_id = teams.id
-group by teams.id;
+create table suppliers_to_stores(
+    suppliers_id uuid references suppliers,
+    stores_id  uuid references stores,
+    primary key (suppliers_id, stores_id)
+);
+
+insert into suppliers(name_suppliers, phone)
+values ('Artem', '89187774321'),
+       ('Anton', '89384565432'),
+       ('Vlad', '89992452455');
+
+insert into stores(name_stores, address)
+values ('flowers', 'qqq'),
+       ('candy', 'www'),
+       ('fruit', 'eee');
+
+insert into suppliers_to_stores(suppliers_id, stores_id)
+values
+    ((select id from suppliers where name_suppliers = 'Artem'),
+     (select id from stores where name_stores = 'flowers')),
+    ((select id from suppliers where name_suppliers = 'Artem'),
+     (select id from stores where name_stores = 'candy')),
+    ((select id from suppliers where name_suppliers = 'Anton'),
+     (select id from stores where name_stores = 'flowers')),
+    ((select id from suppliers where name_suppliers = 'Anton'),
+     (select id from stores where name_stores = 'candy')),
+    ((select id from suppliers where name_suppliers = 'Vlad'),
+     (select id from stores where name_stores = 'fruit')),
+    ((select id from suppliers where name_suppliers = 'Vlad'),
+     (select id from stores where name_stores = 'candy'));
+
+select suppliers.id, suppliers.name_suppliers, suppliers.phone,
+coalesce(jsonb_agg(jsonb_build_object('id', stores.id, 'name_stores', stores.name_stores, 'address', stores.address))
+filter (where stores.id is not null), '[]')
+from suppliers
+left join suppliers_to_stores on suppliers.id = suppliers_to_stores.suppliers_id
+left join stores on stores.id = suppliers_to_stores.stores_id
+group by suppliers.id;
+
+select stores.id, stores.name_stores, stores.address,
+coalesce(jsonb_agg(jsonb_build_object('id', suppliers.id, 'name_suppliers', suppliers.name_suppliers, 'phone', suppliers.phone))
+filter (where suppliers.id is not null), '[]')
+from stores
+left join suppliers_to_stores on stores.id = suppliers_to_stores.stores_id
+left join suppliers on suppliers.id = suppliers_to_stores.suppliers_id
+group by stores.id;
