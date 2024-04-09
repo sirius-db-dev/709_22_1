@@ -557,3 +557,7 @@ select name from provider_nfd
 join provider_vehicle_info_aat pv on pv.provider_id = id
 join vehicle_usk on pv.vehicle_id = vehicle_usk.id
 where vehicle_usk.body_volume >= 30 and vehicle_usk.lifting_capacity >=20;
+
+
+-- 7
+select count(distinct brand) from product_vcw;
