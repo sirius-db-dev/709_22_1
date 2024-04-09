@@ -1,65 +1,96 @@
 --Кривенко Артём
-create extension if not exists "uuid-ossp";
 
-drop table if exists music, musicians, music_to_musicians cascade;
 
-create table music(
-    id   uuid primary key default uuid_generate_v4(),
-    title text,
-    genre text,
-    duration int
+--7
+select count(distinct brand) from product_knh
+where category = 'электронные книги';
+
+
+
+
+
+--6
+select model from product_knh p
+join supplier_product_info_woj sp on p.id = sp.product_id
+where weight = 
+(
+select min(weight) from product_knh
+where category = 'электронные книги'
+) AND price = 
+(
+select min(price) from supplier_product_info_woj sp
+join product_knh p on sp.product_id = p.id
+where weight = 
+    (
+    select min(weight) from product_knh
+    where category = 'электронные книги'
+    )
 );
 
-create table musicians(
-    id   uuid primary key default uuid_generate_v4(),
-    first_name text,
-    last_name text,
-    year_of_birth date
+
+
+
+
+--5
+select min(price) as min_price, max(price) as max_price, avg(screen_size) as avg_screen_size, sum(price * quantity) as total_cost
+from product_knh p
+join supplier_product_info_woj sp on p.id = sp.product_id
+where brand = 'Amazon' and category = 'электронные книги';
+
+
+
+
+
+--4
+select distinct name from supplier_n2b s
+where id in 
+(
+select supplier_id from supplier_product_info_woj sp
+join product_knh p on sp.product_id = p.id
+where category in ('ноутбуки', 'мониторы')
+) or id in 
+(
+select supplier_id from supplier_vehicle_info_nro sv
+join vehicle_djy v on sv.vehicle_id = v.id
+where body_volume >= 30 and lifting_capacity >= 20
 );
 
-create table music_to_musicians(
-    music_id uuid references music,
-    musicians_id  uuid references musicians,
-    primary key (music_id, musicians_id)
+
+
+
+
+
+--3
+select distinct name from supplier_n2b s
+where id in 
+(
+select supplier_id from supplier_product_info_woj s
+join product_knh p on s.product_id = p.id
+where category = 'часы'
+)and id not in 
+(
+select supplier_id from supplier_product_info_woj s
+join product_knh p on s.product_id = p.id
+where category = 'смартфоны'
 );
 
-insert into music(title, genre, duration)
-values ('qqq', 'www', 123),
-       ('aaa', 'sss', 456),
-       ('zzz', 'xxx', 124);
 
-insert into musicians(first_name, last_name, year_of_birth)
-values ('Artem', 'Krivenko', '2007-03-07'),
-       ('Anton', 'Otroshenko', '2006-02-08'),
-       ('Vlad', 'Osipov', '2006-11-20');
 
-insert into music_to_musicians(music_id, musicians_id)
-values
-    ((select id from music where title = 'qqq'),
-     (select id from musicians where last_name = 'Krivenko')),
-    ((select id from music where title = 'qqq'),
-     (select id from musicians where last_name = 'Otroshenko')),
-    ((select id from music where title = 'aaa'),
-     (select id from musicians where last_name = 'Krivenko')),
-    ((select id from music where title = 'aaa'),
-     (select id from musicians where last_name = 'Otroshenko')),
-    ((select id from music where title = 'zzz'),
-     (select id from musicians where last_name = 'Osipov')),
-    ((select id from music where title = 'zzz'),
-     (select id from musicians where last_name = 'Otroshenko'));
 
-select music.id, music.title, music.genre, music.duration,
-coalesce(jsonb_agg(jsonb_build_object('id', musicians.id, 'first_name', musicians.first_name, 'last_name', musicians.last_name, 'year_of_birth', musicians.year_of_birth))
-filter (where musicians.id is not null), '[]')
-from music
-left join music_to_musicians on music.id = music_to_musicians.music_id
-left join musicians on musicians.id = music_to_musicians.musicians_id
-group by music.id;
 
-select musicians.id, musicians.first_name, musicians.last_name, musicians.year_of_birth,
-coalesce(jsonb_agg(jsonb_build_object('id', music.id, 'title', music.title, 'genre', music.genre, 'duration', music.duration))
-filter (where music.id is not null), '[]')
-from musicians
-left join music_to_musicians on musicians.id = music_to_musicians.musicians_id
-left join music on music.id = music_to_musicians.music_id
-group by musicians.id;
+--2
+select distinct  name from supplier_n2b s
+join supplier_product_info_woj sp on s.id = sp.supplier_id
+join product_knh p on p.id = sp.product_id
+where os = 'Android' or os = 'iOS';
+
+
+
+
+
+--1
+select distinct model from product_knh p
+join supplier_product_info_woj s on p.id = s.product_id
+where brand = 'Xiaomi' or brand = 'HONOR' or brand = 'HUAWEI' and price > 15000 and price < 20000;
+
+
