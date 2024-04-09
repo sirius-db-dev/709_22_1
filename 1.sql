@@ -1,89 +1,76 @@
-create extension if not exists "uuid-ossp";
+-- 1. Вывести модели смартфонов без повторений брендов Xiaomi, HONOR, HUAWEI с ценой от 15_000 до 25_000.
+SELECT DISTINCT model from product_ooz
+JOIN vendor_product_info_avf on product_ooz.id = vendor_product_info_avf.product_id
+WHERE (brand = 'HUAWEI' or brand = 'Xiaomi' or brand = 'HONOR') and (price >= 15000 and price <= 25000)
 
-drop table if exists authors, books, author_to_book cascade;
 
-create table authors
-(
-    id uuid primary key default uuid_generate_v4(),
-    at_first_name text,
-    at_last_name text,
-    at_date date
+
+-- 2. Вывести названия компаний (НЕ брендов), поставляющих смартфоны как с ОС Android, так и с ОС iOS.
+select DISTINCT vendor_hbe.name from product_ooz
+join vendor_product_info_avf on vendor_product_info_avf.product_id = product_ooz.id
+join vendor_hbe on vendor_hbe.id = vendor_product_info_avf.vendor_id
+where (product_ooz.category = 'смартфоны') and (product_ooz.os = 'Android' and product_ooz.os = 'iOS')
+
+
+
+-- 3. Вывести названия компаний, поставляющие часы, но не смартфоны.
+SELECT DISTINCT vendor_hbe.name from product_ooz
+JOIN vendor_product_info_avf on vendor_product_info_avf.product_id = product_ooz.id
+JOIN vendor_hbe on vendor_hbe.id = vendor_product_info_avf.vendor_id
+WHERE product_ooz.category = 'часы' and vendor_hbe.id not in (
+    select DISTINCT vendor_hbe.id from product_ooz
+    join vendor_product_info_avf on vendor_product_info_avf.product_id = product_ooz.id
+    join vendor_hbe on vendor_hbe.id = vendor_product_info_avf.vendor_id
+    where product_ooz.category = 'смартфоны'
 );
 
-create table books
-(
-    id uuid primary key default uuid_generate_v4(),
-    bk_name text,
-    bk_genre text,
-    bk_date date
-);
 
-create table author_to_book
-(
-    author_id uuid references authors,
-    book_id  uuid references books,
-    primary key (author_id, book_id)
-);
-
-insert into authors(at_first_name, at_last_name, at_date)
-values ('Антон', 'Отрощенко', '1999-02-09'),
-       ('Никита', 'Лобода', '1965-05-13'),
-       ('Артем', 'Кривенко', '1976-04-05'),
-       ('Влад', 'Аргун', '1987-01-23'),
-       ('Михаил', 'Носков', '1986-11-20');
+-- 4. Вывести названия компаний, поставляющих ноутбуки и мониторы либо 
+--имеющие транспортные средства с объемом(body_volume) от 30 и грузоподъемностью от 20.
+select DISTINCT vendor_hbe.name from product_ooz
+join vendor_product_info_avf on vendor_product_info_avf.product_id = product_ooz.id
+join vendor_hbe on vendor_hbe.id = vendor_product_info_avf.vendor_id
+where (product_ooz.category = 'ноутбуки' and product_ooz.category = 'мониторы')
+UNION
+select DISTINCT vendor_hbe.name from car_svs
+join vendor_car_info_wus on vendor_car_info_wus.car_id = car_svs.id
+join vendor_hbe on vendor_hbe.id = vendor_car_info_wus.vendor_id
+where (car_svs.lifting_capacity >= 20 and car_svs.body_volume >= 30)
 
 
-insert into books(bk_name, bk_genre, bk_date)
-VALUES ('Metro 2033', 'Fantasy', '2005-08-23'),
-       ('Metro 2034', 'Fantasy', '2007-04-20'),
-       ('Metro 2035', 'Fantasy', '2009-04-20'),
-       ('Garry Potter', 'Drama', '2001-04-12');
-
-insert into author_to_book(author_id, book_id)
-values
-    ((select id from authors where at_last_name = 'Отрощенко'),
-     (select id from books where bk_name = 'Metro 2033')),
-    ((select id from authors where at_last_name = 'Отрощенко'),
-     (select id from books where bk_name = 'Metro 2034')),
-    ((select id from authors where at_last_name = 'Лобода'),
-     (select id from books where bk_name = 'Metro 2033')),
-    ((select id from authors where at_last_name = 'Лобода'),
-     (select id from books where bk_name = 'Metro 2034')),
-    ((select id from authors where at_last_name = 'Носков'),
-     (select id from books where bk_name = 'Metro 2035')),
-    ((select id from authors where at_last_name = 'Кривенко'),
-     (select id from books where bk_name = 'Garry Potter')),
-    ((select id from authors where at_last_name = 'Аргун'),
-     (select id from books where bk_name = 'Metro 2035')),
-    ((select id from authors where at_last_name = 'Носков'),
-     (select id from books where bk_name = 'Garry Potter'));
 
 
-select
-  at.id,
-  at.at_first_name,
-  at.at_last_name,
-  at.at_date,
-  coalesce(jsonb_agg(jsonb_build_object(
-    'id', bk.id, 'name', bk.bk_name, 'genre', bk.bk_genre, 'date', bk.bk_date))
-      filter (where bk.id is not null), '[]') as books
-from authors at
-left join author_to_book ba on at.id = ba.author_id
-left join books bk on bk.id = ba.book_id
-group by at.id;
+
+--5. Вывести минимальную и максимальную цену, 
+--средний размер экрана и суммарную стоимость (price * quantity) электронных книг бренда Amazon.
+select min(price), max(price), avg(screen_size), sum(price * quantity)
+from product_ooz pr
+join vendor_product_info_avf vp on vp.product_id = pr.id
+where (category = 'электронные книги') and (brand = 'Amazon')
 
 
-select
-  bk.id,
-  bk.bk_name,
-  bk.bk_genre,
-  bk.bk_date,
-  coalesce(json_agg(json_build_object(
-    'id', at.id, 'first_name', at.at_first_name, 
-    'last_name', at.at_last_name, 'date', at.at_date))
-      filter (where at.id is not null), '[]') as authors
-from books bk
-left join author_to_book ba on bk.id = ba.book_id
-left join authors at on at.id = ba.author_id
-group by bk.id;
 
+
+-- 6. Вывести модели электронных книг 
+--с наименьшим весом 
+--и наименьшей ценой среди электронных книг 
+--с наименьшим весом.
+select model from product_ooz pr
+join vendor_product_info_avf vp on pr.id = vp.product_id
+where weight = (
+    select min(weight) from product_ooz
+    where (category = 'электронные книги')
+) AND price = (
+    select min(price) from vendor_product_info_avf vp
+    join product_ooz pr on vp.product_id = pr.id
+    where weight = (
+    select min(weight) from product_ooz
+    where category = 'электронные книги'
+    )
+)
+
+
+-- 7. Вывести количество различных брендов в категории электронные книги.
+select count(brand) from (
+    select DISTINCT brand from product_ooz
+    where category = 'электронные книги' ) as brnd
